@@ -205,7 +205,7 @@ def save_bib(txt):
 				keywords=entry['keywords']
 			)
 			publication.save()
-			pubication._created = True
+			publication._created = True
 			publications.append(publication)
 			print('added')
 
