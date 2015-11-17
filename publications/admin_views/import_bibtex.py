@@ -10,23 +10,10 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.core import urlresolvers
-from publications.bibtex import parse
+
+from publications.bibtex import parse, MONTHS
 from publications.models import Publication, Type
 
-# mapping of months
-MONTHS = {
-	'jan': 1, 'january': 1,
-	'feb': 2, 'february': 2,
-	'mar': 3, 'march': 3,
-	'apr': 4, 'april': 4,
-	'may': 5,
-	'jun': 6, 'june': 6,
-	'jul': 7, 'july': 7,
-	'aug': 8, 'august': 8,
-	'sep': 9, 'september': 9,
-	'oct': 10, 'october': 10,
-	'nov': 11, 'november': 11,
-	'dec': 12, 'december': 12}
 
 def import_bibtex(request):
 	if request.method == 'POST':

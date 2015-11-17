@@ -67,7 +67,7 @@ class Publication(models.Model):
 	type = models.ForeignKey(Type)
 	citekey = models.CharField(max_length=512, blank=True, null=True,
 		help_text='BibTex citation key. Leave blank if unsure.')
-	title = models.CharField(max_length=512)
+	title = models.CharField(max_length=512, unique=True)
 	authors = models.CharField(max_length=2048,
 		help_text='List of authors separated by commas or <i>and</i>.')
 	year = models.PositiveIntegerField()
@@ -94,6 +94,7 @@ class Publication(models.Model):
 	external = models.BooleanField(default=False,
 		help_text='If publication was written in another lab, mark as external.')
 	abstract = models.TextField(blank=True)
+	excerpt = models.TextField(blank=True)
 	isbn = models.CharField(max_length=32, verbose_name="ISBN", blank=True,
 		help_text='Only for a book.') # A-B-C-D
 	lists = models.ManyToManyField(List, blank=True)
@@ -242,6 +243,19 @@ class Publication(models.Model):
 				return self.title[:61] + '...'
 			else:
 				return self.title[:index] + '...'
+
+
+	def add_tag(self, txt):
+		"""
+		Given text, get/create tag and add to instance
+		"""
+		try:
+			tag = Tag.objects.get(slug=slugify(txt))
+		except Tag.DoesNotExist:
+			tag = Tag.objects.create(name=txt)
+			tag.save()
+		self.keywords.add(tag.name)
+
 
 	def authors_escaped(self):
 		return [(author, author.lower().replace(' ', '+'))

@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+
+{% block extrahead %}
+<style>
+body {
+  background: black,
+}
+</style>
+{% endblock %}
+
+
+{% block title %}
+CITATION HUB
+{% endblock %}
+
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">
+  CitationHub
+</a></h1>
+
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

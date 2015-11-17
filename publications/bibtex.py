@@ -9,6 +9,22 @@ __version__ = '1.2.0'
 import re
 import publications.six as six
 
+# mapping of months
+MONTHS = {
+	'jan': 1, 'january': 1,
+	'feb': 2, 'february': 2,
+	'mar': 3, 'march': 3,
+	'apr': 4, 'april': 4,
+	'may': 5,
+	'jun': 6, 'june': 6,
+	'jul': 7, 'july': 7,
+	'aug': 8, 'august': 8,
+	'sep': 9, 'september': 9,
+	'oct': 10, 'october': 10,
+	'nov': 11, 'november': 11,
+	'dec': 12, 'december': 12,
+}
+
 # special character mapping
 special_chars = (
 	(r'\"{a}', 'ä'), (r'{\"a}', 'ä'), (r'\"a', 'ä'), (r'H{a}', 'ä'),
@@ -89,3 +105,118 @@ def parse(string):
 			bib[-1][key] = value
 
 	return bib
+
+def save_bib(txt):
+	from publications.models import Publication, Type
+
+	bib = parse(txt)
+
+	publications = []
+	for entry in bib:
+		if (
+			'title' not in entry or
+			'author' not in entry or
+			'year' not in entry
+		):
+			print('failed to save entry!')
+			continue
+
+		# parse authors
+		authors = entry['author'].split(' and ')
+		for i in range(len(authors)):
+			author = authors[i].split(',')
+			author = [author[-1]] + author[:-1]
+			authors[i] = ' '.join(author)
+		authors = ', '.join(authors)
+
+		# add missing keys
+		keys = [
+			'journal',
+			'booktitle',
+			'publisher',
+			'institution',
+			'url',
+			'doi',
+			'isbn',
+			'keywords',
+			'note',
+			'abstract',
+			'month']
+
+		for key in keys:
+			if not key in entry:
+				entry[key] = ''
+
+		# map integer fields to integers
+		entry['month'] = MONTHS.get(entry['month'].lower(), 0)
+		entry['volume'] = entry.get('volume', None)
+		entry['number'] = entry.get('number', None)
+
+		if isinstance(entry['volume'], six.text_type):
+			entry['volume'] = int(re.sub('[^0-9]', '', entry['volume']))
+		if isinstance(entry['number'], six.text_type):
+			entry['number'] = int(re.sub('[^0-9]', '', entry['number']))
+
+		# remove whitespace characters (likely due to line breaks)
+		entry['url'] = re.sub(r'\s', '', entry['url'])
+
+		# determine type
+		type_id = None
+
+		types = Type.objects.all()
+		for t in types:
+			if entry['type'] in t.bibtex_type_list:
+				type_id = t.id
+				break
+
+		if type_id is None:
+			errors['bibliography'] = 'Type "' + entry['type'] + '" unknown.'
+			break
+
+		if Publication.objects.filter(title=entry['title']).count():
+			print('Not adding: %s' % entry['title'])
+			# what's the contract here?
+			#publications.append(False)
+			publication = Publication.objects.get(title=entry['title'])
+			publication._created = False
+			publications.append(publication)
+
+		else:
+			# add publication
+			publication = Publication(
+				type_id=type_id,
+				citekey=entry['key'],
+				title=entry['title'],
+				authors=authors,
+				year=entry['year'],
+				month=entry['month'],
+				journal=entry['journal'],
+				book_title=entry['booktitle'],
+				publisher=entry['publisher'],
+				institution=entry['institution'],
+				volume=entry['volume'],
+				number=entry['number'],
+				note=entry['note'],
+				url=entry['url'],
+				doi=entry['doi'],
+				isbn=entry['isbn'],
+				external=False,
+				abstract=entry['abstract'],
+				keywords=entry['keywords']
+			)
+			publication.save()
+			publications.append(publication)
+			print('added')
+
+	return publications
+
+
+
+
+
+
+
+
+
+
+
